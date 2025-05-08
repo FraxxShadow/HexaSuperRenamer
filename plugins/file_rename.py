@@ -105,7 +105,7 @@ async def add_admin(client, message):
 
 class TaskQueue:
     def __init__(self):
-        self.queues: Dict[int, Deque[Tuple[str, Message, asyncio.coroutine]]] = {}
+        self.queues: Dict[int, Deque[Tuple[str, Message, asyncio.coroutine]] = {}
         self.processing: Dict[int, Set[str]] = {}
         self.tasks: Dict[str, asyncio.Task] = {}
         self.max_retries = 3
@@ -212,10 +212,11 @@ task_queue = TaskQueue()
 async def queue_status(client, message: Message):
     user_id = message.from_user.id
     status = await task_queue.get_queue_status(user_id)
+    user_limit = USER_LIMITS.get(user_id, CON_LIMIT_NORMAL)
     
     await message.reply_text(
         f"**Fɪʟᴇ Qᴜᴇᴜᴇ Sᴛᴀᴛᴜs:**\n"
-        f"**➠ Pʀᴏᴄᴇssɪɴɢ: {status['processing']} ғɪʟᴇs**\n"
+        f"**➠ Pʀᴏᴄᴇssɪɴɢ: {status['processing']}/{user_limit} ғɪʟᴇs**\n"
         f"**➠ Wᴀɪᴛɪɴɢ: {status['queued']} ғɪʟᴇs**\n"
         f"**➠ Tᴏᴛᴀʟ: {status['total']} ғɪʟᴇs**\n\n"
         f"**Usᴇ /cancel ᴛᴏ ᴄᴀɴᴄᴇʟ ᴀʟʟ ǫᴜᴇᴜᴇᴅ ᴛᴀsᴋs**"
@@ -791,7 +792,7 @@ async def auto_rename_files(client, message: Message):
 
         file_info = {"file_id": file_id, "file_name": file_name if file_name else "Unknown"}
         active_sequences[user_id].append(file_info)
-        await message.reply_text("Fɪʟᴇ ʀᴇᴄᴇɪᴠᴇᴅ ɪɴ sᴇǫᴜᴇɴᴄᴇ...\nEɴᴅ Sᴇǫᴜᴇɴᴄᴇ ʙʏ ᴜsɪɴɢ /esequence")
+        await message.reply_text("**Fɪʟᴇ ʀᴇᴄᴇɪᴠᴇᴅ ɪɴ sᴇǫᴜᴇɴᴄᴇ...\nEɴᴅ Sᴇǫᴜᴇɴᴄᴇ ʙʏ ᴜsɪɴɢ /esequence**")
         return
         
     async def process_file():
