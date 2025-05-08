@@ -438,13 +438,21 @@ async def check_premium_mode():
 
 
 SEASON_EPISODE_PATTERNS = [
-    (re.compile(r'S(\d+)(?:E|EP)(\d+)'), ('season', 'episode')),
-    (re.compile(r'S(\d+)[\s-]*(?:E|EP)(\d+)'), ('season', 'episode')),
-    (re.compile(r'Season\s*(\d+)\s*Episode\s*(\d+)', re.IGNORECASE), ('season', 'episode')),
-    (re.compile(r'\[S(\d+)\]\[E(\d+)\]'), ('season', 'episode')),
-    (re.compile(r'S(\d+)[^\d]+(\d{1,3})\b'), ('season', 'episode')),
-    (re.compile(r'(?:E|EP|Episode)\s*(\d+)', re.IGNORECASE), (None, 'episode')),
-    (re.compile(r'\b(\d{1,3})\b'), (None, 'episode'))
+    (re.compile(r'S(\d+)(?:E|EP)(\d+)'), ('season', 'episode')),  # S01E01, S01EP01
+    (re.compile(r'S(\d+)[\s-]*(?:E|EP)(\d+)'), ('season', 'episode')),  # S01 E01, S01-E01
+    (re.compile(r'Season\s*(\d+)\s*Episode\s*(\d+)', re.IGNORECASE), ('season', 'episode')),  # Season 1 Episode 1
+    (re.compile(r'\[S(\d+)\]\[E(\d+)\]'), ('season', 'episode')),  # [S01][E01]
+    (re.compile(r'S(\d+)[^\d]+(\d{1,3})\b'), ('season', 'episode')),  # S01.E01 or S01-01
+    (re.compile(r'(?:E|EP|Episode)\s*(\d+)', re.IGNORECASE), (None, 'episode')),  # Episode 1, E1
+    (re.compile(r'\b(\d{1,3})\b'), (None, 'episode')),  # Just the episode number
+    (re.compile(r'S(\d+)_-_(\d+)'), ('season', 'episode')),  # S01_-_01 or S1_-_01
+    (re.compile(r'S(\d+)[\s-_]*E(\d+)', re.IGNORECASE), ('season', 'episode')),  # S01-E01 or S1-E1
+    (re.compile(r'S(\d+)[\s-_]+(\d+)', re.IGNORECASE), ('season', 'episode')),  # S01-01, S1 01
+    (re.compile(r'S(\d+)_(\d+)_'), ('season', 'episode')),  # S01_03_, S1_03_
+    (re.compile(r'_S(\d+)_(\d+)_'), ('season', 'episode')),  # _S1_03_, _S01_03_
+    (re.compile(r'S(\d+)_+(\d+)_'), ('season', 'episode')),  # S01_3_, S1_3_
+    (re.compile(r'_+S(\d+)_(\d+)_'), ('season', 'episode')),  # _S01_3_, _S1_3_
+    (re.compile(r'_S(\d+)_(\d+)', re.IGNORECASE), ('season', 'episode')),  # _S1_03, _S01_03
 ]
 
 QUALITY_PATTERNS = [
@@ -459,23 +467,13 @@ QUALITY_PATTERNS = [
 ]
 
 def extract_season_episode(filename):
-    filename = re.sub(r'\[.*?\]', ' ', filename)
-    filename = re.sub(r'\(.*?\)', ' ', filename)
-    
     for pattern, (season_group, episode_group) in SEASON_EPISODE_PATTERNS:
         match = pattern.search(filename)
         if match:
-            season = episode = None
-            if season_group:
-                season = match.group(1).zfill(2) if match.group(1) else "01"
-            if episode_group:
-                episode = match.group(2 if season_group else 1).zfill(2)
-            
-            logger.info(f"Extracted season: {season}, episode: {episode} from {filename}")
-            return season or "01", episode
-    
-    logger.warning(f"No season/episode pattern matched for {filename}")
-    return "01", None
+            season = match.group(1) if season_group else "1"
+            episode = match.group(2) if episode_group else None
+            return season, episode
+    return "1", None
 
 def extract_quality(filename):
     seen = set()
