@@ -487,7 +487,7 @@ def extract_season_episode(filename):
         match = pattern.search(filename)
         if match:
             season = match.group(1) if season_group else "1"
-            episode = match.group(2) if episode_group else None
+            episode = match.group(2) if episode_group and len(match.groups()) > 1 else None
             return season, episode
     return "1", None
 
