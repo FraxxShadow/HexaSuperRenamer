@@ -1,4 +1,3 @@
-
 from helper.database import DARKXSIDE78 as db
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
@@ -9,7 +8,7 @@ def check_ban_status(func):
     @wraps(func)
     async def wrapper(client, message, *args, **kwargs):
         user_id = message.from_user.id
-        is_banned, ban_reason = await DARKXSIDE78.is_user_banned(user_id)
+        is_banned, ban_reason = await db.is_user_banned(user_id)
         if is_banned:
             await message.reply_text(
                 f"**Yᴏᴜ ᴀʀᴇ ʙᴀɴɴᴇᴅ ғʀᴏᴍ ᴜsɪɴɢ ᴛʜɪs ʙᴏᴛ.**\n\n**Rᴇᴀsᴏɴ:** {ban_reason}"
