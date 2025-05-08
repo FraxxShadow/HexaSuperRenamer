@@ -438,33 +438,16 @@ async def check_premium_mode():
 
 
 SEASON_EPISODE_PATTERNS = [
-    # Standard patterns with explicit E/EP
-    (re.compile(r'S(\d+)(?:E|EP)(\d+)', re.IGNORECASE), ('season', 'episode')),  # S01E01, S01EP01
-    (re.compile(r'S(\d+)[\s-]*(?:E|EP)(\d+)', re.IGNORECASE), ('season', 'episode')),  # S01 E01, S01-E01
-    
-    # Patterns for S##-## format (improved to better capture episode)
-    (re.compile(r'S(\d+)[\s._-]+(\d{2,3})', re.IGNORECASE), ('season', 'episode')),  # S01-01, S01.01, S01_01
-    (re.compile(r'S(\d+)[^\da-zA-Z]+(\d{1,3})\b', re.IGNORECASE), ('season', 'episode')),  # S01x01, S01 01
-    
-    # Other standard patterns
+    (re.compile(r'S(\d+)(?:E|EP)(\d+)'), ('season', 'episode')),
+    (re.compile(r'S(\d+)[\s-]*(?:E|EP)(\d+)'), ('season', 'episode')),
     (re.compile(r'Season\s*(\d+)\s*Episode\s*(\d+)', re.IGNORECASE), ('season', 'episode')),
-    (re.compile(r'\[S(\d+)\]\[E(\d+)\]', re.IGNORECASE), ('season', 'episode')),
-    (re.compile(r'S(\d+)_E(\d+)', re.IGNORECASE), ('season', 'episode')),
-    (re.compile(r'_S(\d+)_(\d+)_', re.IGNORECASE), ('season', 'episode')),
-    (re.compile(r'S(\d+)_-_(\d+)', re.IGNORECASE), ('season', 'episode')),
-    (re.compile(r'_S(\d+)_(\d+)', re.IGNORECASE), ('season', 'episode')),
-    
-    # Patterns with optional formatting
-    (re.compile(r'[Ss](\d+)[\W_]*[Ee](\d+)', re.IGNORECASE), ('season', 'episode')),
-    (re.compile(r'[Ss]eason[\s]*(\d+)[\W_]+[Ee]pisode[\s]*(\d+)', re.IGNORECASE), ('season', 'episode')),
-    
-    # Standalone episode numbers (season defaults to 1)
-    (re.compile(r'(?:E|EP|Episode)[\s]*(\d+)', re.IGNORECASE), (None, 'episode')),
-    (re.compile(r'\b(\d{1,3})\b', re.IGNORECASE), (None, 'episode')),
+    (re.compile(r'\[S(\d+)\]\[E(\d+)\]'), ('season', 'episode')),
+    (re.compile(r'S(\d+)[^\d]+(\d{1,3})\b'), ('season', 'episode')),
+    (re.compile(r'(?:E|EP|Episode)\s*(\d+)', re.IGNORECASE), (None, 'episode')),
+    (re.compile(r'\b(\d{1,3})\b'), (None, 'episode'))
 ]
 
 QUALITY_PATTERNS = [
-    (re.compile(r'\[(\d{3,4}p)\](?:\s*\[\1\])*', re.IGNORECASE), lambda m: m.group(1)),
     (re.compile(r'\b(\d{3,4})p?\b'), lambda m: f"{m.group(1)}p"),
     (re.compile(r'\b(4k|2160p)\b', re.IGNORECASE), lambda m: "2160p"),
     (re.compile(r'\b(2k|1440p)\b', re.IGNORECASE), lambda m: "1440p"),
@@ -475,20 +458,19 @@ QUALITY_PATTERNS = [
 ]
 
 def extract_season_episode(filename):
-    if not filename:
-        return "1", None
-        
     for pattern, (season_group, episode_group) in SEASON_EPISODE_PATTERNS:
         match = pattern.search(filename)
         if match:
-            try:
-                season = match.group(1).zfill(2) if season_group else "01"
-                episode = match.group(2).zfill(2) if episode_group and len(match.groups()) >= 2 else None
-                return season, episode
-            except (IndexError, AttributeError):
-                continue
-                
-    return "01", None
+            if season_group is not None:
+                season = match.group(1)
+                episode = match.group(2)
+            else:
+                season = "1"
+                episode = match.group(1)
+            logger.info(f"Extracted season: {season}, episode: {episode} from {filename}")
+            return season, episode
+    logger.warning(f"No season/episode pattern matched for {filename}")
+    return "1", None
 
 def extract_quality(filename):
     seen = set()
