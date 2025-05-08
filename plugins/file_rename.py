@@ -212,11 +212,10 @@ task_queue = TaskQueue()
 async def queue_status(client, message: Message):
     user_id = message.from_user.id
     status = await task_queue.get_queue_status(user_id)
-    user_limit = USER_LIMITS.get(user_id, CON_LIMIT_NORMAL)
     
     await message.reply_text(
         f"**Fɪʟᴇ Qᴜᴇᴜᴇ Sᴛᴀᴛᴜs:**\n"
-        f"**➠ Pʀᴏᴄᴇssɪɴɢ: {status['processing']}/{user_limit} ғɪʟᴇs**\n"
+        f"**➠ Pʀᴏᴄᴇssɪɴɢ: {status['processing']} ғɪʟᴇs**\n"
         f"**➠ Wᴀɪᴛɪɴɢ: {status['queued']} ғɪʟᴇs**\n"
         f"**➠ Tᴏᴛᴀʟ: {status['total']} ғɪʟᴇs**\n\n"
         f"**Usᴇ /cancel ᴛᴏ ᴄᴀɴᴄᴇʟ ᴀʟʟ ǫᴜᴇᴜᴇᴅ ᴛᴀsᴋs**"
@@ -449,6 +448,7 @@ SEASON_EPISODE_PATTERNS = [
 ]
 
 QUALITY_PATTERNS = [
+    (re.compile(r'\[(\d{3,4}p)\](?:\s*\[\1\])*', re.IGNORECASE), lambda m: m.group(1)),
     (re.compile(r'\b(\d{3,4})p?\b'), lambda m: f"{m.group(1)}p"),
     (re.compile(r'\b(4k|2160p)\b', re.IGNORECASE), lambda m: "2160p"),
     (re.compile(r'\b(2k|1440p)\b', re.IGNORECASE), lambda m: "1440p"),
@@ -459,19 +459,23 @@ QUALITY_PATTERNS = [
 ]
 
 def extract_season_episode(filename):
+    filename = re.sub(r'\[.*?\]', ' ', filename)
+    filename = re.sub(r'\(.*?\)', ' ', filename)
+    
     for pattern, (season_group, episode_group) in SEASON_EPISODE_PATTERNS:
         match = pattern.search(filename)
         if match:
-            if season_group is not None:
-                season = match.group(1)
-                episode = match.group(2)
-            else:
-                season = "1"
-                episode = match.group(1)
+            season = episode = None
+            if season_group:
+                season = match.group(1).zfill(2) if match.group(1) else "01"
+            if episode_group:
+                episode = match.group(2 if season_group else 1).zfill(2)
+            
             logger.info(f"Extracted season: {season}, episode: {episode} from {filename}")
-            return season, episode
+            return season or "01", episode
+    
     logger.warning(f"No season/episode pattern matched for {filename}")
-    return "1", None
+    return "01", None
 
 def extract_quality(filename):
     seen = set()
@@ -792,7 +796,7 @@ async def auto_rename_files(client, message: Message):
 
         file_info = {"file_id": file_id, "file_name": file_name if file_name else "Unknown"}
         active_sequences[user_id].append(file_info)
-        await message.reply_text("**Fɪʟᴇ ʀᴇᴄᴇɪᴠᴇᴅ ɪɴ sᴇǫᴜᴇɴᴄᴇ...\nEɴᴅ Sᴇǫᴜᴇɴᴄᴇ ʙʏ ᴜsɪɴɢ /esequence**")
+        await message.reply_text("Fɪʟᴇ ʀᴇᴄᴇɪᴠᴇᴅ ɪɴ sᴇǫᴜᴇɴᴄᴇ...\nEɴᴅ Sᴇǫᴜᴇɴᴄᴇ ʙʏ ᴜsɪɴɢ /esequence")
         return
         
     async def process_file():
@@ -896,13 +900,9 @@ async def auto_rename_files(client, message: Message):
                 
                 await asyncio.sleep(1)
                 
-                if media_type == "video":
-                    audio_info = await detect_audio_info(file_path)
-                    audio_label = get_audio_label(audio_info)
-                    actual_resolution = await detect_video_resolution(file_path)
-                else:
-                    audio_label = ""
-                    actual_resolution = ""
+                audio_info = await detect_audio_info(file_path)
+                audio_label = get_audio_label(audio_info)
+                actual_resolution = await detect_video_resolution(file_path)
 
                 replacements = {
                     '{season}': season or 'XX',
@@ -931,7 +931,6 @@ async def auto_rename_files(client, message: Message):
                     'season': season or 'XX',
                     'episode': episode or 'XX',
                     'chapter': chapter or 'XX',
-                    'audio': audio_label,
                     'quality': quality,
                     'AUDIO': audio_label,
                     'Audio': audio_label,
@@ -967,17 +966,24 @@ async def auto_rename_files(client, message: Message):
                         raise
                 else:
                     file_path = download_path
-                
-                if media_type in ["video", "audio"]:
+
+                # Modified condition to handle PDF exclusion
+                if (media_type in ["video", "audio"] or 
+                    (media_type == "document" and file_ext != ".pdf")):
                     try:
                         await msg.edit("**Aᴅᴅɪɴɢ ᴍᴇᴛᴀᴅᴀᴛᴀ...**")
-                        await add_metadata(file_path if media_type == "video" else download_path, 
-                                           metadata_path, user_id)
+                        await add_metadata(
+                            file_path if media_type == "video" else download_path,
+                            metadata_path, 
+                            user_id
+                        )
                         file_path = metadata_path
                     except Exception as e:
                         await msg.edit(f"Mᴇᴛᴀᴅᴀᴛᴀ ғᴀɪʟᴇᴅ: {e}")
                         raise
                 else:
+                    if media_type == "document" and file_ext == ".pdf":
+                        file_path = download_path
                     await aiofiles.os.rename(download_path, output_path)
                     file_path = output_path
 
