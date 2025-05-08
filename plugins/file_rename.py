@@ -447,7 +447,7 @@ SEASON_EPISODE_PATTERNS = [
     (re.compile(r'\b(\d{1,3})\b'), (None, 'episode')),  # Just the episode number
     (re.compile(r'S(\d+)_-_(\d+)'), ('season', 'episode')),  # S01_-_01 or S1_-_01
     re.compile(r'S(\d+)[\s_-]*E(\d+)', re.IGNORECASE)
-    (re.compile(r'S(\d+)[\s-_]+(\d+)', re.IGNORECASE), ('season', 'episode')),  # S01-01, S1 01
+    re.compile(r'S(\d+)[\s_-]+(\d+)', re.IGNORECASE)
     (re.compile(r'S(\d+)_(\d+)_'), ('season', 'episode')),  # S01_03_, S1_03_
     (re.compile(r'_S(\d+)_(\d+)_'), ('season', 'episode')),  # _S1_03_, _S01_03_
     (re.compile(r'S(\d+)_+(\d+)_'), ('season', 'episode')),  # S01_3_, S1_3_
