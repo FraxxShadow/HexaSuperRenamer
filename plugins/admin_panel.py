@@ -7,6 +7,7 @@ import os, sys, time, asyncio, logging, datetime
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from datetime import datetime, timedelta
 import html
+import pytz
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -61,7 +62,7 @@ async def ban_user(bot: Client, message: Message):
             {"_id": user["_id"]},
             {"$set": {
                 "ban_status.is_banned": True,
-                "ban_status.banned_on": datetime.datetime.now(pytz.utc).isoformat(),
+                "ban_status.banned_on": datetime.now(pytz.utc).isoformat(),
                 "ban_status.ban_reason": reason
             }}
         )
