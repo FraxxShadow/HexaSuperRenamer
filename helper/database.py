@@ -38,7 +38,6 @@ class Database:
             ban_status=dict(
                 is_banned=False,
                 ban_duration=0,
-                banned_on=datetime.datetime.max.date().isoformat(),
                 ban_reason=''
             )
         )
