@@ -438,16 +438,36 @@ async def check_premium_mode():
 
 
 SEASON_EPISODE_PATTERNS = [
-    (re.compile(r'S(\d+)(?:E|EP)(\d+)'), ('season', 'episode')),  # S01E01, S01EP01
-    (re.compile(r'S(\d+)[\s-]*(?:E|EP)(\d+)'), ('season', 'episode')),  # S01 E01, S01-E01
+    # Standard patterns
+    (re.compile(r'S(\d+)(?:E|EP)(\d+)', re.IGNORECASE), ('season', 'episode')),  # S01E01, S01EP01
+    (re.compile(r'S(\d+)[\s-]*(?:E|EP)(\d+)', re.IGNORECASE), ('season', 'episode')),  # S01 E01, S01-E01
     (re.compile(r'Season\s*(\d+)\s*Episode\s*(\d+)', re.IGNORECASE), ('season', 'episode')),  # Season 1 Episode 1
-    (re.compile(r'\[S(\d+)\]\[E(\d+)\]'), ('season', 'episode')),  # [S01][E01]
-    (re.compile(r'S(\d+)[^\d]+(\d{1,3})\b'), ('season', 'episode')),  # S01.E01 or S01-01
-    (re.compile(r'(?:E|EP|Episode)\s*(\d+)', re.IGNORECASE), (None, 'episode')),  # Episode 1, E1
-    (re.compile(r'\b(\d{1,3})\b'), (None, 'episode')),  # Just the episode number
-    (re.compile(r'S(\d+)[\s_-]*E(\d+)', re.IGNORECASE), ('season', 'episode')),
-    (re.compile(r'S(\d+)[\s_-]+(\d+)', re.IGNORECASE), ('season', 'episode')),
-    (re.compile(r'_?S(\d+)_(\d+)_?'), ('season', 'episode')), 
+    (re.compile(r'\[S(\d+)\]\[E(\d+)\]', re.IGNORECASE), ('season', 'episode')),  # [S01][E01]
+
+    # Patterns with different separators
+    (re.compile(r'S(\d+)[^\d]+(\d{1,3})\b', re.IGNORECASE), ('season', 'episode')),  # S01.E01, S01-01
+    (re.compile(r'S(\d+)_E(\d+)', re.IGNORECASE), ('season', 'episode')),  # S01_E01
+    (re.compile(r'S(\d+)[\s._-]*(\d{1,3})', re.IGNORECASE), ('season', 'episode')),  # S01-01, S01_01, S01.01
+    (re.compile(r'(?:E|EP|Episode)[\s]*(\d+)', re.IGNORECASE), (None, 'episode')),  # Episode 1, E1
+
+    # Patterns with optional formatting
+    (re.compile(r'[Ss](\d+)[\W_]*[Ee](\d+)', re.IGNORECASE), ('season', 'episode')),  # S01E01, S01_E01
+    (re.compile(r'[Ss]eason[\s]*(\d+)[\W_]+[Ee]pisode[\s]*(\d+)', re.IGNORECASE), ('season', 'episode')),  # Season 1 Episode 1
+
+    # Roman numerals for season or episode
+    (re.compile(r'[Ss]eason[\s]*(\d+|[IVXLCDM]+)[\s]*[Ee]pisode[\s]*(\d+|[IVXLCDM]+)', re.IGNORECASE), ('season', 'episode')),  # Season I Episode III
+    (re.compile(r'[Ss](\d+|[IVXLCDM]+)[\s_-]*[Ee](\d+|[IVXLCDM]+)', re.IGNORECASE), ('season', 'episode')),  # S01E01, S01EIII
+
+    # Standalone episode numbers
+    (re.compile(r'(?:Episode|Ep|E)[\s]*(\d+)', re.IGNORECASE), (None, 'episode')),  # Episode 1, Ep1, E1
+    (re.compile(r'\b(\d{1,3})\b', re.IGNORECASE), (None, 'episode')),  # Just the episode number
+
+    # Flexible mixed patterns
+    (re.compile(r'[Ss](\d+)[\s._-]*[Ee](\d+)', re.IGNORECASE), ('season', 'episode')),  # S01.E01, S01_E01
+    (re.compile(r'[Ss](\d+)[\W]+(\d+)', re.IGNORECASE), ('season', 'episode')),  # S01-01, S01 01, S01_01
+    (re.compile(r'[Ss](\d+)[\W_]+[Ee](\d+)', re.IGNORECASE), ('season', 'episode')),  # S01_E01
+    (re.compile(r'\[S(\d+)[\W]*E(\d+)\]', re.IGNORECASE), ('season', 'episode')),  # [S01-E01], [S01.E01]
+    (re.compile(r'[Ss](\d+)E(\d+)', re.IGNORECASE), ('season', 'episode')),  # S01E01 without separators
 ]
 
 QUALITY_PATTERNS = [
