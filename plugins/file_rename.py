@@ -931,6 +931,7 @@ async def auto_rename_files(client, message: Message):
                     'season': season or 'XX',
                     'episode': episode or 'XX',
                     'chapter': chapter or 'XX',
+                    'audio': audio_label,
                     'quality': quality,
                     'AUDIO': audio_label,
                     'Audio': audio_label,
