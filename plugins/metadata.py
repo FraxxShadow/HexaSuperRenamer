@@ -1,7 +1,7 @@
 from helper.database import DARKXSIDE78 as db
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
-from config import Txt
+from config import *
 from functools import wraps
 
 def check_ban_status(func):
